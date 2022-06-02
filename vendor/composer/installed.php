@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pledg/module-pledg-payment-gateway',
-        'pretty_version' => '1.0.4',
-        'version' => '1.0.4.0',
-        'reference' => NULL,
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '9c49af868ab21d20b4631c474d19b33c0dde16ec',
         'type' => 'magento2-module',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -20,9 +20,9 @@
             'dev_requirement' => false,
         ),
         'pledg/module-pledg-payment-gateway' => array(
-            'pretty_version' => '1.0.4',
-            'version' => '1.0.4.0',
-            'reference' => NULL,
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '9c49af868ab21d20b4631c474d19b33c0dde16ec',
             'type' => 'magento2-module',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
