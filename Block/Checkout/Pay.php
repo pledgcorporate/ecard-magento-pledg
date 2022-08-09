@@ -13,6 +13,8 @@ use Pledg\PledgPaymentGateway\Helper\Crypto;
 
 class Pay extends Template
 {
+    const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
+
     /**
      * @var Config
      */
@@ -211,7 +213,9 @@ class Pay extends Template
 
             return ['account' => [
                 'creation_date' => (new \DateTime($customer->getCreatedAt()))->format('Y-m-d'),
-                'number_of_purchases' => (int)$this->orderCollectionFactory->create($customerId)->getSize(),
+                'number_of_purchases' => (int)$this->orderCollectionFactory->create($customerId)
+                    ->addFieldToFilter('status', ['in' => self::AUTHORIZED_ORDER_STATUS])
+                    ->getSize(),
             ]];
         } catch (\Exception $e) {
             $this->_logger->error('Could not resolve order customer for Pledg data', [
