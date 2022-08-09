@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pledg/module-pledg-payment-gateway',
-        'pretty_version' => 'dev-2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
-        'version' => 'dev-2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
-        'reference' => '2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '0cd8794bfde5fe934ab9e3a8de1b594894d38549',
         'type' => 'magento2-module',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -20,9 +20,9 @@
             'dev_requirement' => false,
         ),
         'pledg/module-pledg-payment-gateway' => array(
-            'pretty_version' => 'dev-2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
-            'version' => 'dev-2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
-            'reference' => '2a2d6524df2ee0d8652b87dddf82441515e5f0a6',
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '0cd8794bfde5fe934ab9e3a8de1b594894d38549',
             'type' => 'magento2-module',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
