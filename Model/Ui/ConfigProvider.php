@@ -82,7 +82,7 @@ final class ConfigProvider implements ConfigProviderInterface
             }
 
             $methodLogo = $defaultLogoUrl;
-            if (strlen($method->getConfigData('gateway_logo')) > 0) {
+            if (strlen((string) $method->getConfigData('gateway_logo')) > 0) {
                 $methodLogo = $mediaBaseUrl . $method->getConfigData('gateway_logo');
             }
 
