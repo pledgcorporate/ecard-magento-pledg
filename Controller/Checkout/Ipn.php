@@ -188,7 +188,7 @@ class Ipn extends Action
      */
     private function invoiceOrder(Order $order, string $transactionId, Phrase $ipnMessage): void
     {
-        if (!$order->canInvoice() || $order->getState() !== Order::STATE_PENDING_PAYMENT) {
+        if (!$order->canInvoice()) {
             throw new \Exception(sprintf('Order with state %s cannot be processed and invoiced', $order->getState()));
         }
 
