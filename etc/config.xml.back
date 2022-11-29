@@ -4,8 +4,8 @@
         <pledg_gateway>
             <payment>
                 <staging>1</staging>
-                <gateway_url>https://front.ecard.pledg.co/purchase</gateway_url>
-                <staging_url>https://staging.front.ecard.pledg.co/purchase</staging_url>
+                <staging_api_url>https://staging.back.ecard.pledg.co/api</staging_api_url>
+                <prod_api_url>https://back.ecard.pledg.co/api</prod_api_url>
             </payment>
         </pledg_gateway>
         <payment>

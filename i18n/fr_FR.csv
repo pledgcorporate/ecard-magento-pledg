@@ -19,7 +19,7 @@ Country,Pays
 "Received Pledg back notification with status %1. Waiting for further instructions to update order.","Reception de la notification back de Pledg avec le statut %1. En attente des instructions suivantes pour mettre a jour la commande."
 "Received invoicing order from Pledg transfer notification","Reception d'un ordre de facturation de la notification transfert de Pledg"
 "Customer accessed payment page","Le client a accede a la page de paiement"
-"Pay your order #%1 with Pledg","Payez votre commande : #%1 avec Pledg"
+"Pay your order #%1 with #%2","Payez votre commande : #%1 avec #%2"
 "An error occurred while processing your payment. Please try again.","Une erreur est survenue lors de votre paiement. Veuillez re-essayer."
 "Please select a country on Pledg payment method %1","Veuillez selectionner un Pays pour la methode de paiement Pledg %1"
 "Please fill in an api key on Pledg payment method %1","Veuillez saisir une clef d'API pour la methode de paiement Pledg %1"
@@ -32,11 +32,12 @@ Enabled,Active
 Title,Titre
 Description,Description
 Logo,Logo
+"Is B2B","Est B2B"
 "Merchant UID mapping","Correspondance UID Marchand"
 "Secret key","Clef Secrete"
 "Minimum order amount to activate payment method","Montant Minimum de commande pour activer la methode de paiement"
 "Maximum order amount to activate payment method","Montant Maximum de commande pour activer la methode de paiement"
-"Sort Order","Ordre de Tri"
+"Sort order","Ordre de tri"
 "Pledg Payment Gateway 1","Moyen de paiement Pledg 1"
 "Pledg Payment Gateway 2","Moyen de paiement Pledg 2"
 "Pledg Payment Gateway 3","Moyen de paiement Pledg 3"

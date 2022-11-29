@@ -3,6 +3,7 @@
 namespace Pledg\PledgPaymentGateway\Controller\Checkout;
 
 use Magento\Checkout\Model\Session;
+use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Model\Order;
@@ -28,19 +29,17 @@ class Pay extends CheckoutAction
     private $logger;
 
     /**
-     * @param Context         $context
-     * @param Session         $checkoutSession
-     * @param OrderFactory    $orderFactory
-     * @param PageFactory     $pageFactory
-     * @param Config          $configHelper
-     * @param LoggerInterface $logger
+     * CustomerSession
      */
+    private $customerSession;
+
     public function __construct(
         Context $context,
         Session $checkoutSession,
         OrderFactory $orderFactory,
         PageFactory $pageFactory,
         Config $configHelper,
+        CustomerSession $customerSession, 
         LoggerInterface $logger
     ) {
         parent::__construct($context, $checkoutSession, $orderFactory);
@@ -48,6 +47,7 @@ class Pay extends CheckoutAction
         $this->pageFactory = $pageFactory;
         $this->configHelper = $configHelper;
         $this->logger = $logger;
+        $this->customerSession = $customerSession;
     }
 
     /**
@@ -73,8 +73,8 @@ class Pay extends CheckoutAction
                 __('Customer accessed payment page')
             );
             $order->save();
-
-            $title = __('Pay your order #%1 with Pledg', $order->getIncrementId());
+            
+            $title = __('Pay your order #%1 with #%2', $order->getIncrementId(), 'Pledg');
             $page = $this->pageFactory->create();
             $page->getConfig()->getTitle()->set($title);
 
@@ -84,6 +84,7 @@ class Pay extends CheckoutAction
             }
 
             $page->getLayout()->getBlock('pledg_payment_gateway_checkout_pay')->setOrder($order);
+            $page->getLayout()->getBlock('pledg_payment_gateway_checkout_pay')->setCustomerSession($this->customerSession);
 
             return $page;
         } catch (\Exception $e) {

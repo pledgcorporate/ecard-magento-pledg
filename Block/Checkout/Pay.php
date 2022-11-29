@@ -3,6 +3,8 @@
 namespace Pledg\PledgPaymentGateway\Block\Checkout;
 
 use Magento\Customer\Model\ResourceModel\CustomerRepository;
+use Magento\Customer\Model\Session as CustomerSession;
+use \Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Sales\Api\Data\OrderAddressInterface;
 use Magento\Sales\Model\Order;
@@ -13,7 +15,9 @@ use Pledg\PledgPaymentGateway\Helper\Crypto;
 
 class Pay extends Template
 {
-    const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
+    private const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
+
+    private const PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE = 'SIRET';
 
     /**
      * @var Config
@@ -24,6 +28,11 @@ class Pay extends Template
      * @var Crypto
      */
     private $crypto;
+
+    /**
+     * @var CustomerSession
+     */
+    private $customerSession;
 
     /**
      * @var CollectionFactory
@@ -41,6 +50,11 @@ class Pay extends Template
     private $order;
 
     /**
+     * ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param Template\Context   $context
      * @param Config             $configHelper
      * @param Crypto             $crypto
@@ -54,6 +68,7 @@ class Pay extends Template
         Crypto $crypto,
         CollectionFactory $orderCollectionFactory,
         CustomerRepository $customerRepository,
+        ScopeConfigInterface $scopeConfig,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -62,11 +77,33 @@ class Pay extends Template
         $this->crypto = $crypto;
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->customerRepository = $customerRepository;
+        $this->scopeConfig = $scopeConfig;
     }
 
-    /**
-     * @return array
-     */
+    public function setOrder(Order $order): self
+    {
+        $this->order = $order;
+
+        return $this;
+    }
+
+    public function getOrder(): Order
+    {
+        return $this->order;
+    }
+
+    public function setCustomerSession(CustomerSession $customerSession): self
+    {
+        $this->customerSession = $customerSession;
+
+        return $this;
+    }
+
+    public function getCustomerSession(): CustomerSession
+    {
+        return $this->customerSession;
+    }
+
     public function getPledgData(): array
     {
         /** @var Order $order */
@@ -102,6 +139,28 @@ class Pay extends Template
         $telephone = $orderAddress->getTelephone();
         if (!empty($telephone)) {
             $pledgData['phoneNumber'] = preg_replace('/^(\+|00)(.*)$/', '$2', $telephone);
+        }
+
+        // Handling B2B
+        $gatewayIsB2B = $order->getPayment()->getMethodInstance()->getConfigData('is_b2b', $order->getStoreId());
+        if ($gatewayIsB2B && $this->customerSession->isLoggedIn()) {
+            $customer = $this->customerRepository->getById($this->customerSession->getCustomer()->getId());
+            
+            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name') 
+                ?: 'siret_number';
+            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name') 
+                ?: 'company_name';
+            
+            $siretAttribute = $customer->getCustomAttribute($siretCustomFieldName);
+            $companyNameAttribute = $customer->getCustomAttribute($companyCustomFieldName);
+
+            if ($siretAttribute && $companyNameAttribute) {
+                $pledgData = \array_merge($pledgData, [
+                    'b2bCompanyName' => $companyNameAttribute->getValue(),
+                    'b2bCompanyNationalId' => trim($siretAttribute->getValue()),
+                    'b2bCompanyNationalIdType' => self::PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE,
+                ]);
+            }
         }
 
         $secretKey = $order->getPayment()->getMethodInstance()->getConfigData('secret_key', $order->getStoreId());
@@ -272,25 +331,5 @@ class Pay extends Template
         }
 
         return $stringToEncode;
-    }
-
-    /**
-     * @param Order $order
-     *
-     * @return $this
-     */
-    public function setOrder(Order $order): self
-    {
-        $this->order = $order;
-
-        return $this;
-    }
-
-    /**
-     * @return Order
-     */
-    public function getOrder(): Order
-    {
-        return $this->order;
     }
 }
