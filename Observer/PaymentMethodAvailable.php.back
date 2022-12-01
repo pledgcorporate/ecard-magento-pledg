@@ -41,8 +41,6 @@ class PaymentMethodAvailable implements ObserverInterface
 
     /**
      * payment_method_is_active event handler.
-     *
-     * @param Observer $observer
      */
     public function execute(Observer $observer)
     {

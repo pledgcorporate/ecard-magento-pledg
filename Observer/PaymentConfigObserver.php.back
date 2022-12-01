@@ -38,28 +38,20 @@ class PaymentConfigObserver implements ObserverInterface
      */
     private $scopeConfig;
 
-    /**
-     * @param Http             $request
-     * @param ManagerInterface $messageManager
-     * @param WriterInterface  $configWriter
-     */
     public function __construct(
-        Curl $curl,
         Http $request,
         ManagerInterface $messageManager,
         WriterInterface $configWriter,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        Curl $curl
     ) {
-        $this->curl = $curl;
         $this->request = $request;
         $this->messageManager = $messageManager;
         $this->configWriter = $configWriter;
         $this->scopeConfig = $scopeConfig;
+        $this->curl = $curl;
     }
 
-    /**
-     * @param EventObserver $observer
-     */
     public function execute(EventObserver $observer)
     {
         $postParams = $this->request->getPost();
@@ -156,9 +148,6 @@ class PaymentConfigObserver implements ObserverInterface
     }
 
     /**
-     * @param array  $postParams
-     * @param string $sectionCode
-     *
      * @return bool
      */
     private function canProcessSection($postParams, $sectionCode)
