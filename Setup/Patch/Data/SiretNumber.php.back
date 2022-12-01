@@ -53,7 +53,7 @@ class SiretNumber implements DataPatchInterface
      */
     public function apply()
     {
-        return; // Use only to add custom siret field name to new Magento dev instance
+        // return; // Use only to add custom siret field name to new Magento dev instance
 
         // Start setup
         $this->moduleDataSetup->getConnection()->startSetup();

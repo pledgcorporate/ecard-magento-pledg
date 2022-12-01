@@ -39,17 +39,17 @@ class PaymentConfigObserver implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
+        Curl $curl,
         Http $request,
         ManagerInterface $messageManager,
         WriterInterface $configWriter,
-        ScopeConfigInterface $scopeConfig,
-        Curl $curl
+        ScopeConfigInterface $scopeConfig
     ) {
+        $this->curl = $curl;
         $this->request = $request;
         $this->messageManager = $messageManager;
         $this->configWriter = $configWriter;
         $this->scopeConfig = $scopeConfig;
-        $this->curl = $curl;
     }
 
     public function execute(EventObserver $observer)
