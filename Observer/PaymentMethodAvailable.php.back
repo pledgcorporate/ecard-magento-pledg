@@ -4,16 +4,22 @@ namespace Pledg\PledgPaymentGateway\Observer;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Model\Session;
-use \Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Payment\Model\Method\Adapter;
 use Magento\Quote\Api\Data\CartInterface;
+use Pledg\PledgPaymentGateway\Helper\CustomerAttribute;
 use Pledg\PledgPaymentGateway\Model\Ui\ConfigProvider;
 
 class PaymentMethodAvailable implements ObserverInterface
 {
+    /**
+     * CustomerAttribute
+     */
+    private $customerAttribute;
+
     /**
      * CustomerRepositoryInterface
      */
@@ -30,10 +36,12 @@ class PaymentMethodAvailable implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
+        CustomerAttribute $customerAttribute,
         CustomerRepositoryInterface $customerRepository, 
         Session $customerSession, 
         ScopeConfigInterface $scopeConfig
     ) {
+        $this->customerAttribute = $customerAttribute;
         $this->customerRepository = $customerRepository;
         $this->customerSession = $customerSession;
         $this->scopeConfig = $scopeConfig;
@@ -67,7 +75,12 @@ class PaymentMethodAvailable implements ObserverInterface
         $gatewayIsB2B = $adapter->getConfigData('is_b2b', $quote->getStoreId());
         
         if ($this->customerSession->isLoggedIn()) {
-            $customer = $this->customerRepository->getById($this->customerSession->getCustomer()->getId());
+            try {
+                $customer = $this->customerRepository->getById($this->customerSession->getCustomer()->getId());
+            } catch (\Exception $e) {
+                $checkResult->setData('is_available', false);
+                return;
+            }
         
             // Handling groups
             if ($allowedGroupsConfig = $adapter->getConfigData('allowed_groups', $quote->getStoreId())) {
@@ -86,8 +99,8 @@ class PaymentMethodAvailable implements ObserverInterface
             $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name') 
                 ?: 'company_name';
             
-            $siretAttribute = $customer->getCustomAttribute($siretCustomFieldName);
-            $companyNameAttribute = $customer->getCustomAttribute($companyCustomFieldName);
+            $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
+            $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
             
             $customerIsB2B = $siretAttribute && $companyNameAttribute;
 
