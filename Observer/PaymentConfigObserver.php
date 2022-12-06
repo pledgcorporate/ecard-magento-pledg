@@ -2,15 +2,22 @@
 
 namespace Pledg\PledgPaymentGateway\Observer;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
+use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Message\ManagerInterface;
 use Pledg\PledgPaymentGateway\Model\Ui\ConfigProvider;
 
 class PaymentConfigObserver implements ObserverInterface
 {
+    /**
+     * @var Curl
+     */
+    private $curl;
+
     /**
      * @var Http
      */
@@ -27,23 +34,24 @@ class PaymentConfigObserver implements ObserverInterface
     private $configWriter;
 
     /**
-     * @param Http             $request
-     * @param ManagerInterface $messageManager
-     * @param WriterInterface  $configWriter
+     * @var ScopeConfigInterface
      */
+    private $scopeConfig;
+
     public function __construct(
+        Curl $curl,
         Http $request,
         ManagerInterface $messageManager,
-        WriterInterface $configWriter
+        WriterInterface $configWriter,
+        ScopeConfigInterface $scopeConfig
     ) {
+        $this->curl = $curl;
         $this->request = $request;
         $this->messageManager = $messageManager;
         $this->configWriter = $configWriter;
+        $this->scopeConfig = $scopeConfig;
     }
 
-    /**
-     * @param EventObserver $observer
-     */
     public function execute(EventObserver $observer)
     {
         $postParams = $this->request->getPost();
@@ -56,6 +64,7 @@ class PaymentConfigObserver implements ObserverInterface
         foreach (ConfigProvider::getPaymentMethodCodes() as $paymentMethodCode) {
             if ($this->canProcessSection($postParams, $paymentMethodCode)) {
                 $fields = $groups[$paymentMethodCode]['fields'];
+
                 if (!empty($fields['active']['value']) && array_key_exists('api_key_mapping', $fields)) {
                     $countryMapping = $fields['api_key_mapping']['value'] ?? [];
                     $hasError = false;
@@ -76,6 +85,32 @@ class PaymentConfigObserver implements ObserverInterface
                             $this->messageManager->addErrorMessage(
                                 __('Please fill in an api key on Pledg payment method %1', $paymentMethodCode)
                             );
+                        } else {
+                            // Check B2B consistance
+                            $pledgMerchantApiUrl = $this->scopeConfig->getValue('pledg_gateway/payment/staging') 
+                                ? $this->scopeConfig->getValue('pledg_gateway/payment/staging_api_url') 
+                                : $this->scopeConfig->getValue('pledg_gateway/payment/prod_api_url')
+                            ;
+                            $pledgMerchantApiUrl = $pledgMerchantApiUrl . '/merchants/' . $row['api_key'];
+
+                            $this->curl->get($pledgMerchantApiUrl);
+                            $result = json_decode($this->curl->getBody());
+
+                            if (isset($result->error)) {
+                                $hasError = true;
+                                $this->messageManager->addErrorMessage($result->error->debug);
+                            } else {
+                                $merchantB2B = $fields['is_b2b']['value'];
+
+                                if ($result->is_b2b != $merchantB2B) {
+                                    $hasError = true;
+                                    $this->messageManager->addErrorMessage(sprintf(
+                                        __('You are trying to configure a %s payment method whereas one or more of its merchants Uid are %s'),
+                                        $merchantB2B ? __('Business to Business') : __('Business to Customer'),
+                                        $result->is_b2b ? __('Business to Business') : __('Business to Customer')
+                                    ));
+                                }
+                            }
                         }
 
                         if (in_array($row['country'], $countries)) {
@@ -113,9 +148,6 @@ class PaymentConfigObserver implements ObserverInterface
     }
 
     /**
-     * @param array  $postParams
-     * @param string $sectionCode
-     *
      * @return bool
      */
     private function canProcessSection($postParams, $sectionCode)

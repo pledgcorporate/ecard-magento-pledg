@@ -2,18 +2,24 @@
 
 namespace Pledg\PledgPaymentGateway\Block\Checkout;
 
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\ResourceModel\CustomerRepository;
+use Magento\Customer\Model\Session as CustomerSession;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Sales\Api\Data\OrderAddressInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Magento\Store\Model\ScopeInterface;
+use Pledg\PledgPaymentGateway\Helper\CustomerAttribute;
 use Pledg\PledgPaymentGateway\Helper\Config;
 use Pledg\PledgPaymentGateway\Helper\Crypto;
 
 class Pay extends Template
 {
-    const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
+    private const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
+
+    private const PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE = 'SIRET';
 
     /**
      * @var Config
@@ -24,6 +30,16 @@ class Pay extends Template
      * @var Crypto
      */
     private $crypto;
+
+    /**
+     * CustomerAttribute
+     */
+    private $customerAttribute;
+
+    /**
+     * @var CustomerSession
+     */
+    private $customerSession;
 
     /**
      * @var CollectionFactory
@@ -41,6 +57,11 @@ class Pay extends Template
     private $order;
 
     /**
+     * ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param Template\Context   $context
      * @param Config             $configHelper
      * @param Crypto             $crypto
@@ -49,30 +70,69 @@ class Pay extends Template
      * @param array              $data
      */
     public function __construct(
+        CustomerAttribute $customerAttribute,
         Template\Context $context,
         Config $configHelper,
         Crypto $crypto,
         CollectionFactory $orderCollectionFactory,
         CustomerRepository $customerRepository,
+        ScopeConfigInterface $scopeConfig,
         array $data = []
     ) {
         parent::__construct($context, $data);
 
+        $this->customerAttribute = $customerAttribute;
         $this->configHelper = $configHelper;
         $this->crypto = $crypto;
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->customerRepository = $customerRepository;
+        $this->scopeConfig = $scopeConfig;
     }
 
-    /**
-     * @return array
-     */
+    public function setOrder(Order $order): self
+    {
+        $this->order = $order;
+
+        return $this;
+    }
+
+    public function getOrder(): Order
+    {
+        return $this->order;
+    }
+
+    public function setCustomerSession(CustomerSession $customerSession): self
+    {
+        $this->customerSession = $customerSession;
+
+        return $this;
+    }
+
+    public function getCustomerSession(): CustomerSession
+    {
+        return $this->customerSession;
+    }
+
     public function getPledgData(): array
     {
         /** @var Order $order */
         $order = $this->getOrder();
         $orderIncrementId = $order->getIncrementId();
         $orderAddress = $order->getBillingAddress();
+        $customer = null;
+
+        try {
+            $customerId = (int) $order->getCustomerId();
+            if (!empty($customerId)) {
+                $customer = $this->customerRepository->getById($customerId);
+            }
+        }
+        catch (\Exception $e) {
+            $this->_logger->error('Could not resolve order customer for Pledg data', [
+                'exception' => $e,
+                'order' => $order->getIncrementId(),
+            ]);
+        }
 
         $pledgData = [
             'merchantUid' => $this->configHelper->getMerchantIdForOrder($order),
@@ -86,7 +146,7 @@ class Pay extends Template
             'lang' => $this->getLang(),
             'countryCode' => $orderAddress->getCountryId(),
             'address' => $this->getAddressData($orderAddress),
-            'metadata' => $this->getMetaData($order),
+            'metadata' => $this->getMetaData($order, $customer),
             'showCloseButton' => true,
             'paymentNotificationUrl' => $this->getUrl('pledg/checkout/ipn', [
                 '_secure' => true,
@@ -104,6 +164,10 @@ class Pay extends Template
             $pledgData['phoneNumber'] = preg_replace('/^(\+|00)(.*)$/', '$2', $telephone);
         }
 
+        if ($customer) {
+            $pledgData = \array_merge($pledgData, $this->getB2bData($order, $customer));
+        }
+
         $secretKey = $order->getPayment()->getMethodInstance()->getConfigData('secret_key', $order->getStoreId());
         if (empty($secretKey)) {
             return $this->encodeData($pledgData);
@@ -114,9 +178,6 @@ class Pay extends Template
         ];
     }
 
-    /**
-     * @return string
-     */
     private function getLang(): string
     {
         $lang = $this->_scopeConfig->getValue('general/locale/code', ScopeInterface::SCOPE_STORES);
@@ -137,11 +198,6 @@ class Pay extends Template
         return reset($allowedLangs);
     }
 
-    /**
-     * @param OrderAddressInterface $orderAddress
-     *
-     * @return array
-     */
     private function getAddressData(OrderAddressInterface $orderAddress): array
     {
         return [
@@ -154,12 +210,7 @@ class Pay extends Template
         ];
     }
 
-    /**
-     * @param Order $order
-     *
-     * @return array
-     */
-    private function getMetaData(Order $order): array
+    private function getMetaData(Order $order, ?CustomerInterface $customer): array
     {
         $physicalProductTypes = [
             'simple',
@@ -186,52 +237,56 @@ class Pay extends Template
             }
         }
 
-        return array_merge([
-            'plugin' => sprintf(
-                'magento%s-pledg-plugin%s',
-                $this->configHelper->getMagentoVersion(),
-                $this->configHelper->getModuleVersion()
-            ),
-            'products' => $products,
-        ], $this->getCustomerData($order));
+        return array_merge(
+            [
+                'plugin' => sprintf(
+                    'magento%s-pledg-plugin%s',
+                    $this->configHelper->getMagentoVersion(),
+                    $this->configHelper->getModuleVersion()
+                ),
+                'products' => $products,
+            ], 
+            $customer ? $this->getCustomerData($order, $customer) : []
+        );
     }
 
-    /**
-     * @param Order $order
-     *
-     * @return array
-     */
-    private function getCustomerData(Order $order): array
+    private function getCustomerData(Order $order, CustomerInterface $customer): array
     {
-        $customerId = (int)$order->getCustomerId();
-        if (empty($customerId)) {
-            return [];
-        }
-
-        try {
-            $customer = $this->customerRepository->getById($customerId);
-
-            return ['account' => [
+        return [
+            'account' => [
                 'creation_date' => (new \DateTime($customer->getCreatedAt()))->format('Y-m-d'),
-                'number_of_purchases' => (int)$this->orderCollectionFactory->create($customerId)
+                'number_of_purchases' => (int)$this->orderCollectionFactory->create($customer->getId())
                     ->addFieldToFilter('status', ['in' => self::AUTHORIZED_ORDER_STATUS])
                     ->getSize(),
-            ]];
-        } catch (\Exception $e) {
-            $this->_logger->error('Could not resolve order customer for Pledg data', [
-                'exception' => $e,
-                'order' => $order->getIncrementId(),
-            ]);
+            ]
+        ];
+    }
+
+    private function getB2bData(Order $order, CustomerInterface $customer): array
+    {
+        $gatewayIsB2b = $order->getPayment()->getMethodInstance()->getConfigData('is_b2b', $order->getStoreId());
+
+        if ($gatewayIsB2b) {
+            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name') 
+                ?: 'siret_number';
+            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name') 
+                ?: 'company_name';
+            
+            $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
+            $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
+
+            if ($siretAttribute && $companyNameAttribute) {
+                return [
+                    'b2bCompanyNationalId' => $siretAttribute,
+                    'b2bCompanyName' => $companyNameAttribute,
+                    'b2bCompanyNationalIdType' => self::PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE,
+                ];
+            }
         }
 
         return [];
     }
 
-    /**
-     * @param array $data
-     *
-     * @return array
-     */
     private function encodeData(array $data): array
     {
         $convertedData = [];
@@ -272,25 +327,5 @@ class Pay extends Template
         }
 
         return $stringToEncode;
-    }
-
-    /**
-     * @param Order $order
-     *
-     * @return $this
-     */
-    public function setOrder(Order $order): self
-    {
-        $this->order = $order;
-
-        return $this;
-    }
-
-    /**
-     * @return Order
-     */
-    public function getOrder(): Order
-    {
-        return $this->order;
     }
 }
