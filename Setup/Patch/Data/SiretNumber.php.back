@@ -2,128 +2,103 @@
 
 namespace Pledg\PledgPaymentGateway\Setup\Patch\Data;
 
-use Exception;
-use Magento\Customer\Api\CustomerMetadataInterface;
-use Magento\Customer\Model\ResourceModel\Attribute as AttributeResource;
-use Magento\Customer\Setup\CustomerSetup;
-use Magento\Customer\Setup\CustomerSetupFactory;
-use Magento\Eav\Setup\EavSetup;
+use Zend_Validate_Exception;
+use Magento\Eav\Model\Config;
 use Magento\Eav\Setup\EavSetupFactory;
-use Magento\Framework\Setup\ModuleDataSetupInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
-use Psr\Log\LoggerInterface;
+use Magento\Eav\Model\Entity\Attribute\Source\Boolean;
+use Magento\Eav\Model\Entity\Attribute\SetFactory as AttributeSetFactory;
 
 class SiretNumber implements DataPatchInterface
 {
     /**
-     * @var ModuleDataSetupInterface
+     * @var Config
      */
-    private $moduleDataSetup;
+    private $eavConfig;
 
     /**
-     * @var CustomerSetup
+     * @var EavSetupFactory
      */
-    private $customerSetup;
+    private $eavSetupFactory;
 
     /**
-     * @var AttributeResource
+     * @var AttributeSetFactory
      */
-    private $attributeResource;
+    private $attributeSetFactory;
 
     /**
-     * @var LoggerInterface
+     * AddressAttribute constructor.
+     *
+     * @param Config              $eavConfig
+     * @param EavSetupFactory     $eavSetupFactory
+     * @param AttributeSetFactory $attributeSetFactory
      */
-    private $logger;
-
     public function __construct(
-        ModuleDataSetupInterface $moduleDataSetup,
-        CustomerSetupFactory $customerSetupFactory,
+        Config $eavConfig,
         EavSetupFactory $eavSetupFactory,
-        AttributeResource $attributeResource,
-        LoggerInterface $logger
+        AttributeSetFactory $attributeSetFactory
     ) {
-        $this->moduleDataSetup = $moduleDataSetup;
-        $this->customerSetup = $customerSetupFactory->create(['setup' => $moduleDataSetup]);
-        $this->attributeResource = $attributeResource;
-        $this->logger = $logger;
+        $this->eavConfig = $eavConfig;
+        $this->eavSetupFactory = $eavSetupFactory;
+        $this->attributeSetFactory = $attributeSetFactory;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function apply()
-    {
-        return; // Use only to add custom siret field name to new Magento dev instance
-
-        // Start setup
-        $this->moduleDataSetup->getConnection()->startSetup();
-
-        try {
-            // Add customer attribute with settings
-            $this->customerSetup->addAttribute(
-                CustomerMetadataInterface::ENTITY_TYPE_CUSTOMER,
-                'pledg_siret_number',
-                [
-                    'label' => 'Pledg SIRET number',
-                    'required' => 0,
-                    'position' => 100,
-                    'system' => 0,
-                    'user_defined' => 1,
-                    'is_used_in_grid' => 1,
-                    'is_visible_in_grid' => 1,
-                    'is_filterable_in_grid' => 1,
-                    'is_searchable_in_grid' => 1,
-                ]
-            );
-
-            // Add attribute to default attribute set and group
-            $this->customerSetup->addAttributeToSet(
-                CustomerMetadataInterface::ENTITY_TYPE_CUSTOMER,
-                CustomerMetadataInterface::ATTRIBUTE_SET_ID_CUSTOMER,
-                null,
-                'pledg_siret_number'
-            );
-
-            // Get the newly created attribute's model
-            $attribute = $this->customerSetup->getEavConfig()
-                ->getAttribute(CustomerMetadataInterface::ENTITY_TYPE_CUSTOMER, 'pledg_siret_number');
-
-            // Make attribute visible in Admin customer form
-            $attribute->setData('used_in_forms', [
-                'adminhtml_customer'
-            ]);
-
-            // Save attribute using its resource model
-            $this->attributeResource->save($attribute);
-        } catch (Exception $e) {
-            $this->logger->error($e->getMessage());
-        }
-
-        // End setup
-        $this->moduleDataSetup->getConnection()->endSetup();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function getDependencies()
+    public static function getDependencies(): array
     {
         return [];
     }
 
     /**
-     * {@inheritdoc}
+     * Create strategic account customer attribute
+     * @return void
+     * @throws LocalizedException
+     * @throws Zend_Validate_Exception
      */
-    public function getAliases()
+    public function apply(): void
     {
-        return [];
+        $eavSetup = $this->eavSetupFactory->create();
+
+        $customerEntity = $this->eavConfig->getEntityType('customer');
+        $attributeSetId = $customerEntity->getDefaultAttributeSetId();
+
+        $attributeSet = $this->attributeSetFactory->create();
+        $attributeGroupId = $attributeSet->getDefaultGroupId($attributeSetId);
+
+        $eavSetup->addAttribute('customer', 'custom_siret_number', [
+            'type'             => 'text',
+            'label'            => 'Pledg SIRET number',
+            'visible'          => false,
+            'required'         => false,
+            'user_defined'     => true,
+            'system'           => false,
+            'global'           => true,
+            'default'          => 0,
+            'visible_on_front' => false,
+            'is_used_in_grid' => 1,
+            'is_visible_in_grid' => 1,
+            'is_filterable_in_grid' => 1,
+            'is_searchable_in_grid' => 1,
+        ]);
+
+        $customAttribute = $this->eavConfig->getAttribute('customer', 'custom_siret_number');
+
+        $customAttribute->addData([
+            'attribute_set_id' => $attributeSetId,
+            'attribute_group_id' => $attributeGroupId,
+            'used_in_forms' => ['adminhtml_customer', 'customer_account_edit']
+        ]);
+        $customAttribute->save();
     }
 
     /**
      * {@inheritdoc}
      */
-    public static function getVersion()
+    public function getAliases(): array
     {
-        return '1.0.0';
+        return [];
     }
 }
