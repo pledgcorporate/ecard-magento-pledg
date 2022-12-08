@@ -7,7 +7,6 @@ use Magento\Eav\Model\Config;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
-use Magento\Eav\Model\Entity\Attribute\Source\Boolean;
 use Magento\Eav\Model\Entity\Attribute\SetFactory as AttributeSetFactory;
 
 class SiretNumber implements DataPatchInterface
@@ -60,6 +59,8 @@ class SiretNumber implements DataPatchInterface
      */
     public function apply(): void
     {
+        return; // Use only to add custom siret field name to new Magento dev instance
+        
         $eavSetup = $this->eavSetupFactory->create();
 
         $customerEntity = $this->eavConfig->getEntityType('customer');
@@ -68,23 +69,23 @@ class SiretNumber implements DataPatchInterface
         $attributeSet = $this->attributeSetFactory->create();
         $attributeGroupId = $attributeSet->getDefaultGroupId($attributeSetId);
 
-        $eavSetup->addAttribute('customer', 'custom_siret_number', [
-            'type'             => 'text',
-            'label'            => 'Pledg SIRET number',
-            'visible'          => false,
-            'required'         => false,
-            'user_defined'     => true,
-            'system'           => false,
-            'global'           => true,
-            'default'          => 0,
-            'visible_on_front' => false,
-            'is_used_in_grid' => 1,
-            'is_visible_in_grid' => 1,
+        $eavSetup->addAttribute('customer', 'pledg_siret_number', [
+            'type'                  => 'text',
+            'label'                 => 'Pledg SIRET number',
+            'visible'               => false,
+            'required'              => false,
+            'user_defined'          => true,
+            'system'                => false,
+            'global'                => true,
+            'visible_on_front'      => false,
+            'is_used_in_grid'       => 1,
+            'is_visible_in_grid'    => 1,
             'is_filterable_in_grid' => 1,
             'is_searchable_in_grid' => 1,
+            'position'              => 100,
         ]);
 
-        $customAttribute = $this->eavConfig->getAttribute('customer', 'custom_siret_number');
+        $customAttribute = $this->eavConfig->getAttribute('customer', 'pledg_siret_number');
 
         $customAttribute->addData([
             'attribute_set_id' => $attributeSetId,
