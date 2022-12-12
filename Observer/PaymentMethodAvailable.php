@@ -37,8 +37,8 @@ class PaymentMethodAvailable implements ObserverInterface
 
     public function __construct(
         CustomerAttribute $customerAttribute,
-        CustomerRepositoryInterface $customerRepository, 
-        Session $customerSession, 
+        CustomerRepositoryInterface $customerRepository,
+        Session $customerSession,
         ScopeConfigInterface $scopeConfig
     ) {
         $this->customerAttribute = $customerAttribute;
@@ -71,9 +71,9 @@ class PaymentMethodAvailable implements ObserverInterface
             $checkResult->setData('is_available', false);
             return;
         }
-    
+
         $gatewayIsB2B = $adapter->getConfigData('is_b2b', $quote->getStoreId());
-        
+
         if ($this->customerSession->isLoggedIn()) {
             try {
                 $customer = $this->customerRepository->getById($this->customerSession->getCustomer()->getId());
@@ -81,7 +81,7 @@ class PaymentMethodAvailable implements ObserverInterface
                 $checkResult->setData('is_available', false);
                 return;
             }
-        
+
             // Handling groups
             if ($allowedGroupsConfig = $adapter->getConfigData('allowed_groups', $quote->getStoreId())) {
                 $allowedGroups = explode(',', $allowedGroupsConfig);
@@ -94,27 +94,24 @@ class PaymentMethodAvailable implements ObserverInterface
             }
 
             // Handling B2B
-            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name') 
+            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name')
                 ?: 'siret_number';
-            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name') 
+            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name')
                 ?: 'company_name';
-            
+
             $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
-            
+
             $customerIsB2B = $siretAttribute && $companyNameAttribute;
 
             if ($gatewayIsB2B && !$customerIsB2B) { // Do not display B2B gateways for B2C customers
                 $checkResult->setData('is_available', false);
-                return;
             } elseif (!$gatewayIsB2B && $customerIsB2B) { // Do not display B2C gateways for B2B customers
                 $checkResult->setData('is_available', false);
-                return;
             }
         } else {
             if ($gatewayIsB2B) { // Customer not logged : only display B2C gateways
                 $checkResult->setData('is_available', false);
-                return;
             }
         }
     }
