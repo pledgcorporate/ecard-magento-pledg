@@ -119,6 +119,7 @@ class Pay extends Template
         $order = $this->getOrder();
         $orderIncrementId = $order->getIncrementId();
         $orderAddress = $order->getBillingAddress();
+
         $customer = null;
 
         try {
@@ -274,6 +275,9 @@ class Pay extends Template
 
             $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
+            if (!$companyNameAttribute) {
+                $companyNameAttribute = $order->getBillingAddress()->getCompany();
+            }
 
             if ($siretAttribute && $companyNameAttribute) {
                 return [

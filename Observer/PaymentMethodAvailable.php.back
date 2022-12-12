@@ -3,6 +3,7 @@
 namespace Pledg\PledgPaymentGateway\Observer;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\AddressFactory;
 use Magento\Customer\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
@@ -15,6 +16,11 @@ use Pledg\PledgPaymentGateway\Model\Ui\ConfigProvider;
 
 class PaymentMethodAvailable implements ObserverInterface
 {
+    /**
+     * AddressFactory
+     */
+    private $addressFactory;
+
     /**
      * CustomerAttribute
      */
@@ -36,11 +42,13 @@ class PaymentMethodAvailable implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
+        AddressFactory $addressFactory,
         CustomerAttribute $customerAttribute,
         CustomerRepositoryInterface $customerRepository,
         Session $customerSession,
         ScopeConfigInterface $scopeConfig
     ) {
+        $this->addressFactory = $addressFactory;
         $this->customerAttribute = $customerAttribute;
         $this->customerRepository = $customerRepository;
         $this->customerSession = $customerSession;
@@ -87,7 +95,7 @@ class PaymentMethodAvailable implements ObserverInterface
                 $allowedGroups = explode(',', $allowedGroupsConfig);
                 $customerGroup = $this->customerSession->getCustomerGroupId();
 
-                if (($customerGroup === $allowedGroups) || !in_array($customerGroup, $allowedGroups)) {
+                if (!in_array($customerGroup, $allowedGroups)) {
                     $checkResult->setData('is_available', false); // Customer does not belong to this gateway groups
                     return;
                 }
@@ -101,6 +109,11 @@ class PaymentMethodAvailable implements ObserverInterface
 
             $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
+            if (!$companyNameAttribute) {
+                $billingAddressId = $customer->getDefaultBilling();
+                $billingAddress = $this->addressFactory->create()->load($billingAddressId);
+                $companyNameAttribute = $billingAddress->getCompany();
+            }
 
             $customerIsB2B = $siretAttribute && $companyNameAttribute;
 
