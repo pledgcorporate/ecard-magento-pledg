@@ -3,6 +3,7 @@
 namespace Pledg\PledgPaymentGateway\Model\Config\Source;
 
 use Magento\Customer\Model\ResourceModel\Group\Collection as CustomerGroup;
+use Magento\Framework\Data\OptionSourceInterface;
 
 class AllowedGroups
 {

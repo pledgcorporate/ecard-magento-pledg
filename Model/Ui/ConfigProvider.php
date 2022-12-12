@@ -2,9 +2,7 @@
 
 namespace Pledg\PledgPaymentGateway\Model\Ui;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Locale\Resolver;
 use Magento\Framework\UrlInterface;
 use Pledg\PledgPaymentGateway\Gateway\Config\Config1;
 use Pledg\PledgPaymentGateway\Gateway\Config\Config2;
@@ -44,36 +42,31 @@ final class ConfigProvider implements ConfigProviderInterface
     private $request;
 
     /**
-     * @var Resolver
-     */
-    private $store;
-
-    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
 
     /**
-     * @var ScopeConfigInterface
+     * @param Repository            $assetRepo
+     * @param PaymentHelper         $paymentHelper
+     * @param RequestInterface      $request
+     * @param StoreManagerInterface $storeManager
      */
-    private $scopeConfig;
-
     public function __construct(
         Repository $assetRepo,
         PaymentHelper $paymentHelper,
         RequestInterface $request,
-        Resolver $store,
-        StoreManagerInterface $storeManager,
-        ScopeConfigInterface $scopeConfig
+        StoreManagerInterface $storeManager
     ) {
         $this->assetRepo = $assetRepo;
         $this->paymentHelper = $paymentHelper;
         $this->request = $request;
-        $this->store = $store;
         $this->storeManager = $storeManager;
-        $this->scopeConfig = $scopeConfig;
     }
 
+    /**
+     * @return array
+     */
     public function getConfig(): array
     {
         $defaultLogoUrl = $this->assetRepo->getUrlWithParams('Pledg_PledgPaymentGateway::images/pledg_logo.png', [
@@ -94,10 +87,9 @@ final class ConfigProvider implements ConfigProviderInterface
             }
 
             $availableMethods[$methodCode] = [
-                'title'           => $method->getConfigData('title'),
-                'description'     => $method->getConfigData('description'),
-                'api_key_mapping' => json_decode($method->getConfigData('api_key_mapping'), true),
-                'logo'            => $methodLogo,
+                'title'        => $method->getConfigData('title'),
+                'description'  => $method->getConfigData('description'),
+                'logo'         => $methodLogo,
             ];
         }
 
@@ -107,8 +99,6 @@ final class ConfigProvider implements ConfigProviderInterface
 
         return [
             'payment' => $availableMethods,
-            'pledg_gateway' => $this->scopeConfig->getValue('pledg_gateway'),
-            'locale' => $this->store->getLocale(),
         ];
     }
 

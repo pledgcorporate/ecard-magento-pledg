@@ -245,7 +245,7 @@ class Pay extends Template
                     $this->configHelper->getModuleVersion()
                 ),
                 'products' => $products,
-            ],
+            ], 
             $customer ? $this->getCustomerData($order, $customer) : []
         );
     }
@@ -255,7 +255,7 @@ class Pay extends Template
         return [
             'account' => [
                 'creation_date' => (new \DateTime($customer->getCreatedAt()))->format('Y-m-d'),
-                'number_of_purchases' => $this->orderCollectionFactory->create($customer->getId())
+                'number_of_purchases' => (int)$this->orderCollectionFactory->create($customer->getId())
                     ->addFieldToFilter('status', ['in' => self::AUTHORIZED_ORDER_STATUS])
                     ->getSize(),
             ]
@@ -267,11 +267,11 @@ class Pay extends Template
         $gatewayIsB2b = $order->getPayment()->getMethodInstance()->getConfigData('is_b2b', $order->getStoreId());
 
         if ($gatewayIsB2b) {
-            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name')
+            $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name') 
                 ?: 'siret_number';
-            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name')
+            $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name') 
                 ?: 'company_name';
-
+            
             $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
 

@@ -87,8 +87,8 @@ class PaymentConfigObserver implements ObserverInterface
                             );
                         } else {
                             // Check B2B consistance
-                            $pledgMerchantApiUrl = $this->scopeConfig->getValue('pledg_gateway/payment/staging')
-                                ? $this->scopeConfig->getValue('pledg_gateway/payment/staging_api_url')
+                            $pledgMerchantApiUrl = $this->scopeConfig->getValue('pledg_gateway/payment/staging') 
+                                ? $this->scopeConfig->getValue('pledg_gateway/payment/staging_api_url') 
                                 : $this->scopeConfig->getValue('pledg_gateway/payment/prod_api_url')
                             ;
                             $pledgMerchantApiUrl = $pledgMerchantApiUrl . '/merchants/' . $row['api_key'];

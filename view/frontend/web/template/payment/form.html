@@ -3,7 +3,7 @@
         <input type="radio"
                name="payment[method]"
                class="radio"
-               data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: showPaymentSchedule(), visible: isRadioButtonVisible()"/>
+               data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
         <label class="label" data-bind="attr: {'for': getCode()}">
             <img class="payment-icon" data-bind="attr: {src: getPledgLogo(), alt: $t('Logo')}" style="height: 50px;"/>
             <span data-bind="text: getTitle()"></span>
@@ -11,9 +11,6 @@
     </div>
 	<div class="payment-method-content">
 	    <div class="payment-method-note" data-bind="text: getDescription()"></div>
-	</div>
-	<div class="payment-method-content">
-	    <div class="payment-method-schedule"></div>
 	</div>
     <div class="payment-method-content">
         <!-- ko foreach: getRegion('messages') -->
