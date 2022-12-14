@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Pledg\PledgPaymentGateway\Helper;
 
@@ -7,17 +7,14 @@ use Magento\Framework\DataObject;
 
 class CustomerAttribute
 {
-    /**
-     * @return string|null
-     */
-    public static function getCustomerAttributeValue(CustomerInterface $customer, string $attributeCode)
+    public static function getCustomerAttributeValue(CustomerInterface $customer, string $attributeCode): ?string
     {
         $value = null;
         if ($attribute = $customer->getCustomAttribute($attributeCode)) {
             $value = $attribute->getValue();
         }
-        
-        if ((null === $value) 
+
+        if ((null === $value)
             && ($customer instanceof DataObject)
             && $customer->hasData($attributeCode)
         ) {
