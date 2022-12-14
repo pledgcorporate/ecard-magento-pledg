@@ -3,7 +3,7 @@
         'name' => 'pledg/module-pledg-payment-gateway',
         'pretty_version' => 'dev-develop',
         'version' => 'dev-develop',
-        'reference' => '8c119c7ad7a29342ffb37449ec17e7102df79b92',
+        'reference' => '7dffbd2ceb7825833920dc1728d8713b53597399',
         'type' => 'magento2-module',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'pledg/module-pledg-payment-gateway' => array(
             'pretty_version' => 'dev-develop',
             'version' => 'dev-develop',
-            'reference' => '8c119c7ad7a29342ffb37449ec17e7102df79b92',
+            'reference' => '7dffbd2ceb7825833920dc1728d8713b53597399',
             'type' => 'magento2-module',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
