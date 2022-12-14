@@ -3,7 +3,7 @@
 namespace Pledg\PledgPaymentGateway\Observer;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Customer\Model\AddressFactory;
+use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Customer\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
@@ -17,9 +17,9 @@ use Pledg\PledgPaymentGateway\Model\Ui\ConfigProvider;
 class PaymentMethodAvailable implements ObserverInterface
 {
     /**
-     * AddressFactory
+     * AddressRepositoryInterface
      */
-    private $addressFactory;
+    private $addressRepository;
 
     /**
      * CustomerAttribute
@@ -42,13 +42,13 @@ class PaymentMethodAvailable implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
-        AddressFactory $addressFactory,
+        AddressRepositoryInterface $addressRepository,
         CustomerAttribute $customerAttribute,
         CustomerRepositoryInterface $customerRepository,
         Session $customerSession,
         ScopeConfigInterface $scopeConfig
     ) {
-        $this->addressFactory = $addressFactory;
+        $this->addressRepository = $addressRepository;
         $this->customerAttribute = $customerAttribute;
         $this->customerRepository = $customerRepository;
         $this->customerSession = $customerSession;
@@ -80,6 +80,23 @@ class PaymentMethodAvailable implements ObserverInterface
             return;
         }
 
+        // Handling groups
+        if ($allowedGroupsConfig = $adapter->getConfigData('allowed_groups', $quote->getStoreId())) {
+            $allowedGroups = explode(',', $allowedGroupsConfig);
+            try {
+                $customerGroup = $this->customerSession->getCustomerGroupId();
+
+                if (!in_array($customerGroup, $allowedGroups)) {
+                    $checkResult->setData('is_available', false); // Customer does not belong to this gateway groups
+                    return;
+                }
+            } catch (\Exception $e) {
+                $checkResult->setData('is_available', false);
+                return;
+            }
+        }
+
+        // Handling B2B
         $gatewayIsB2B = $adapter->getConfigData('is_b2b', $quote->getStoreId());
 
         if ($this->customerSession->isLoggedIn()) {
@@ -90,18 +107,6 @@ class PaymentMethodAvailable implements ObserverInterface
                 return;
             }
 
-            // Handling groups
-            if ($allowedGroupsConfig = $adapter->getConfigData('allowed_groups', $quote->getStoreId())) {
-                $allowedGroups = explode(',', $allowedGroupsConfig);
-                $customerGroup = $this->customerSession->getCustomerGroupId();
-
-                if (!in_array($customerGroup, $allowedGroups)) {
-                    $checkResult->setData('is_available', false); // Customer does not belong to this gateway groups
-                    return;
-                }
-            }
-
-            // Handling B2B
             $siretCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/siret_custom_field_name')
                 ?: 'siret_number';
             $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name')
@@ -110,9 +115,13 @@ class PaymentMethodAvailable implements ObserverInterface
             $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
             if (!$companyNameAttribute) {
-                $billingAddressId = $customer->getDefaultBilling();
-                $billingAddress = $this->addressFactory->create()->load($billingAddressId);
-                $companyNameAttribute = $billingAddress->getCompany();
+                try {
+                    $billingAddressId = $customer->getDefaultBilling();
+                    $billingAddress = $this->addressRepository->getById($billingAddressId);
+                    $companyNameAttribute = $billingAddress->getCompany();
+                } catch (\Exception $e) {
+                    die($e->getMessage());
+                }
             }
 
             $customerIsB2B = $siretAttribute && $companyNameAttribute;

@@ -1,5 +1,5 @@
 {
-    "name": "pledg/OPERATOR_COMPOSER_PACKAGE_NAME",
+    "name": "pledg/operator_composer_name",
     "description": "Pledg Payment Gateway",
     "require": {
         "php": "~7.1.3||~7.2.0||~7.3.0||~7.4||~8.1",
@@ -17,5 +17,12 @@
         "psr-4": {
             "Pledg\\PledgPaymentGateway\\": ""
         }
+    },
+    "scripts": {
+        "phpunit": "phpunit",
+        "pwd": "pwd"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9"
     }
 }
