@@ -5,6 +5,9 @@ namespace Pledg\PledgPaymentGateway\Helper;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\DataObject;
 
+/**
+ * Retrieve either the EAV custom attribute of a customer, or its data attribute, or null
+ */
 class CustomerAttribute
 {
     public static function getCustomerAttributeValue(CustomerInterface $customer, string $attributeCode): ?string
