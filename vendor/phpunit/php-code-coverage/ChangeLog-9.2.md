@@ -2,6 +2,37 @@
 
 All notable changes are documented in this file using the [Keep a CHANGELOG](http://keepachangelog.com/) principles.
 
+## [9.2.26] - 2023-03-06
+
+### Changed
+
+* Improved the legend on the file pages of the HTML code coverage report
+
+## [9.2.25] - 2023-02-25
+
+### Fixed
+
+* [#981](https://github.com/sebastianbergmann/php-code-coverage/issues/981): `CodeUnitFindingVisitor` does not support DNF types
+
+## [9.2.24] - 2023-01-26
+
+### Changed
+
+* [#970](https://github.com/sebastianbergmann/php-code-coverage/issues/970): CSS and JavaScript assets are now referenced using `?v=%s` URLs in the HTML report to avoid cache issues
+
+## [9.2.23] - 2022-12-28
+
+### Fixed
+
+* [#971](https://github.com/sebastianbergmann/php-code-coverage/issues/971): PHP report does not handle serialized code coverage data larger than 2 GB
+* [#974](https://github.com/sebastianbergmann/php-code-coverage/issues/974): Executable line analysis fails for declarations with enumerations and unions
+
+## [9.2.22] - 2022-12-18
+
+### Fixed
+
+* [#969](https://github.com/sebastianbergmann/php-code-coverage/pull/969): Fixed identifying line with `throw` as executable
+
 ## [9.2.21] - 2022-12-14
 
 ### Changed
@@ -445,6 +476,11 @@ All notable changes are documented in this file using the [Keep a CHANGELOG](htt
 
 * This component is no longer supported on PHP 7.1
 
+[9.2.26]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.25...9.2.26
+[9.2.25]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.24...9.2.25
+[9.2.24]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.23...9.2.24
+[9.2.23]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.22...9.2.23
+[9.2.22]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.21...9.2.22
 [9.2.21]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.20...9.2.21
 [9.2.20]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.19...9.2.20
 [9.2.19]: https://github.com/sebastianbergmann/php-code-coverage/compare/9.2.18...9.2.19
