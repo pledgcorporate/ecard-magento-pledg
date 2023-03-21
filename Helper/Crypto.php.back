@@ -3,6 +3,7 @@
 namespace Pledg\PledgPaymentGateway\Helper;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class Crypto
 {
@@ -14,7 +15,7 @@ class Crypto
      */
     public function encode(array $payload, string $secretKey): string
     {
-        return JWT::encode($payload, $secretKey);
+        return JWT::encode($payload, $secretKey, 'HS256');
     }
 
     /**
@@ -25,6 +26,6 @@ class Crypto
      */
     public function decode(string $signature, string $secretKey): array
     {
-        return (array)JWT::decode($signature, $secretKey, ['HS256']);
+        return (array) JWT::decode($signature, new Key($secretKey, 'HS256'));
     }
 }
