@@ -59,7 +59,7 @@ class CompanyName implements DataPatchInterface
      */
     public function apply(): void
     {
-        return; // Use only to add custom company field name to new Magento dev instance
+        // return; // Use only to add custom company field name to new Magento dev instance
         
         $eavSetup = $this->eavSetupFactory->create();
 
