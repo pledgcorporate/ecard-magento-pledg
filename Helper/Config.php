@@ -9,7 +9,7 @@ use Magento\Sales\Model\Order;
 
 class Config extends AbstractHelper
 {
-    const MODULE_VERSION = '1.2.3';
+    const MODULE_VERSION = '1.2.5';
     const ORDER_REFERENCE_PREFIX = 'order_';
 
     /**
