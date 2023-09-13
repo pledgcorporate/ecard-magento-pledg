@@ -19,7 +19,8 @@ class Pay extends Template
 {
     private const AUTHORIZED_ORDER_STATUS = ['complete', 'processing'];
 
-    private const PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE = 'SIRET';
+    private const PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE_SIRET = 'SIRET';
+    private const PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE_SIREN = 'SIREN';
 
     /**
      * @var Config
@@ -273,17 +274,21 @@ class Pay extends Template
             $companyCustomFieldName = $this->scopeConfig->getValue('pledg_gateway/payment/company_custom_field_name')
                 ?: 'company_name';
 
-            $siretAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
+            $companyIdAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $siretCustomFieldName);
             $companyNameAttribute = $this->customerAttribute->getCustomerAttributeValue($customer, $companyCustomFieldName);
             if (!$companyNameAttribute) {
                 $companyNameAttribute = $order->getBillingAddress()->getCompany();
             }
 
-            if ($siretAttribute && $companyNameAttribute) {
+            if ($companyIdAttribute && $companyNameAttribute) {
+                $companyNationalIdType = self::PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE_SIREN;
+                if (strlen($companyIdAttribute) > 9) {
+                    $companyNationalIdType = self::PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE_SIRET;
+                }
                 return [
-                    'b2bCompanyNationalId' => $siretAttribute,
+                    'b2bCompanyNationalId' => $companyIdAttribute,
                     'b2bCompanyName' => $companyNameAttribute,
-                    'b2bCompanyNationalIdType' => self::PLEDG_B2B_COMPANY_NATIONAL_ID_TYPE,
+                    'b2bCompanyNationalIdType' => $companyNationalIdType,
                 ];
             }
         }
