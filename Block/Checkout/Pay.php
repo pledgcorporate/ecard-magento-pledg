@@ -231,6 +231,10 @@ class Pay extends Template
                 'quantity' => (int)$item->getQtyOrdered(),
                 'name' => $item->getName(),
                 'unit_amount_cents' => round($item->getPriceInclTax() * 100),
+                // delivery data must be in each product details:
+                'delivery_mode' => $order->getShippingDescription(),
+                'delivery_mode_reference' => $order->getShippingDescription(),
+                'delivery_cost' => $order->getShippingInclTax(),
             ];
             if (count($products) === 5) {
                 // Metadata field is limited in size
@@ -247,6 +251,7 @@ class Pay extends Template
                     $this->configHelper->getModuleVersion()
                 ),
                 'products' => $products,
+                'departure_date' => date('Y-m-d'),
             ],
             $customer ? $this->getCustomerData($order, $customer) : []
         );
